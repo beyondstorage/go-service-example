@@ -1,12 +1,14 @@
 package example
 
 import (
-	"github.com/aos-dev/go-storage/v2"
-	"github.com/aos-dev/go-storage/v2/types"
+	"github.com/aos-dev/go-storage/v3/types"
 )
 
 // Storage is the example client.
-type Storage struct{}
+type Storage struct {
+	pairPolicy   types.PairPolicy
+	defaultPairs DefaultStoragePairs
+}
 
 // String implements Storager.String
 func (s *Storage) String() string {
@@ -14,7 +16,7 @@ func (s *Storage) String() string {
 }
 
 // NewStorager will create Storager only.
-func NewStorager(pairs ...*types.Pair) (storage.Storager, error) {
+func NewStorager(pairs ...*types.Pair) (types.Storager, error) {
 	panic("implement me")
 }
 

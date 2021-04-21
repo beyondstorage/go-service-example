@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: all check format vet lint build test generate tidy
+.PHONY: all check format lint build test generate tidy
 
 help:
 	@echo "Please use \`make <target>\` where <target> is one of"
@@ -9,51 +9,33 @@ help:
 	@echo "  generate            to generate code"
 	@echo "  test                to run test"
 
-# golint: go get -u golang.org/x/lint/golint
-# definitions: go get -u github.com/aos-dev/go-storage/cmd/definitions
-tools := golint definitions
-
-$(tools):
-	@command -v $@ >/dev/null 2>&1 || echo "$@ is not found, please install it."
-
-check: vet lint
+check: vet
 
 format:
-	@echo "go fmt"
-	@go fmt ./...
-	@echo "ok"
+	go fmt ./...
 
 vet:
-	@echo "go vet"
-	@go vet ./...
-	@echo "ok"
+	go vet ./...
 
-lint: golint
-	@echo "golint"
-	@golint ./...
-	@echo "ok"
-
-generate: definitions
+generate:
 	@echo "generate code"
-	@go generate ./...
-	@go fmt ./...
-	@echo "ok"
+	go generate ./...
+	go fmt ./...
 
-build: generate tidy check
-	@echo "build storage"
-	@go build ./...
-	@echo "ok"
+build: tidy generate check
+	go build ./...
 
 test:
-	@echo "run test"
-	@go test -race -coverprofile=coverage.txt -covermode=atomic -v ./...
-	@go tool cover -html="coverage.txt" -o "coverage.html"
-	@echo "ok"
+	go test -race -coverprofile=coverage.txt -covermode=atomic -v .
+	go tool cover -html="coverage.txt" -o "coverage.html"
+
+integration_test:
+	STORAGE_EXAMPLE_INTEGRATION_TEST=on go test -race -count=1 -covermode=atomic -v ./tests
 
 tidy:
-	@go mod tidy && go mod verify
+	go mod tidy
+	go mod verify
 
 clean:
 	@echo "clean generated files"
-	@find . -type f -name 'generated.go' -delete
-	@echo "Done"
+	find . -type f -name 'generated.go' -delete

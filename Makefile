@@ -30,7 +30,7 @@ test:
 	go tool cover -html="coverage.txt" -o "coverage.html"
 
 integration_test:
-	STORAGE_EXAMPLE_INTEGRATION_TEST=on go test -race -count=1 -covermode=atomic -v ./tests
+	go test -race -count=1 -covermode=atomic -v ./tests
 
 tidy:
 	go mod tidy

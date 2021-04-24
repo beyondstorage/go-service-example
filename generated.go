@@ -24,8 +24,28 @@ const Type = "example"
 // Service available pairs.
 const ()
 
-// Service available metadata.
-const ()
+// ObjectMetadata stores service metadata for object.
+type ObjectMetadata struct {
+}
+
+// GetObjectMetadata will get ObjectMetadata from Object.
+//
+// - This function should not be called by service implementer.
+// - The returning ObjectMetadata is read only and should not be modified.
+func GetObjectMetadata(o *Object) ObjectMetadata {
+	om, ok := o.GetServiceMetadata()
+	if ok {
+		return om.(ObjectMetadata)
+	}
+	return ObjectMetadata{}
+}
+
+// setObjectMetadata will set ObjectMetadata into Object.
+//
+// - This function should only be called once, please make sure all data has been written before set.
+func setObjectMetadata(o *Object, om ObjectMetadata) {
+	o.SetServiceMetadata(om)
+}
 
 // pairStorageNew is the parsed struct
 type pairStorageNew struct {

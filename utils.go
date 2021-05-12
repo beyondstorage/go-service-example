@@ -16,10 +16,16 @@ func (s *Storage) String() string {
 }
 
 // NewStorager will create Storager only.
-func NewStorager(pairs ...*types.Pair) (types.Storager, error) {
+func NewStorager(pairs ...types.Pair) (types.Storager, error) {
 	panic("implement me")
 }
 
 func (s *Storage) formatError(op string, err error, path ...string) error {
+	// if _, ok := err.(services.AosError); ok {
+	// 	return err
+	// }
+
 	panic("implement me")
+
+	// return fmt.Errorf("%w, %v", services.ErrUnexpected, err)
 }

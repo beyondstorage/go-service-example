@@ -1,14 +1,16 @@
 package example
 
 import (
-	"github.com/aos-dev/go-storage/v3/services"
-	"github.com/aos-dev/go-storage/v3/types"
+	"github.com/beyondstorage/go-storage/v4/services"
+	"github.com/beyondstorage/go-storage/v4/types"
 )
 
 // Storage is the example client.
 type Storage struct {
 	pairPolicy   types.PairPolicy
 	defaultPairs DefaultStoragePairs
+
+	types.UnimplementedStorager
 }
 
 // String implements Storager.String
@@ -24,7 +26,7 @@ func NewStorager(pairs ...types.Pair) (types.Storager, error) {
 // formatError converts errors returned by SDK into errors defined in go-storage and go-service-*.
 // The original error SHOULD NOT be wrapped.
 func (s *Storage) formatError(op string, err error, path ...string) error {
-	if _, ok := err.(services.AosError); ok {
+	if _, ok := err.(services.InternalError); ok {
 		return err
 	}
 

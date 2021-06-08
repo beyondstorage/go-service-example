@@ -7,8 +7,8 @@ import (
 
 // Storage is the example client.
 type Storage struct {
-	pairPolicy   types.PairPolicy
 	defaultPairs DefaultStoragePairs
+	features     StorageFeatures
 
 	types.UnimplementedStorager
 }

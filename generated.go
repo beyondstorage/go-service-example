@@ -51,13 +51,27 @@ var (
 	_ Storager = &Storage{}
 )
 
+type StorageFeatures struct {
+	LooseOperationAll      bool
+	LooseOperationCreate   bool
+	LooseOperationDelete   bool
+	LooseOperationList     bool
+	LooseOperationMetadata bool
+	LooseOperationRead     bool
+	LooseOperationStat     bool
+	LooseOperationWrite    bool
+
+	VirtualOperationAll bool
+
+	VirtualPairAll bool
+}
+
 // pairStorageNew is the parsed struct
 type pairStorageNew struct {
 	pairs []Pair
 
 	// Required pairs
 	// Optional pairs
-	// Generated pairs
 }
 
 // parsePairStorageNew will parse Pair slice into *pairStorageNew
@@ -70,7 +84,6 @@ func parsePairStorageNew(opts []Pair) (pairStorageNew, error) {
 		switch v.Key {
 		// Required pairs
 		// Optional pairs
-		// Generated pairs
 		}
 	}
 
@@ -90,11 +103,9 @@ type DefaultStoragePairs struct {
 
 // pairStorageCreate is the parsed struct
 type pairStorageCreate struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
-	// Generated pairs
+	pairs         []Pair
+	HasObjectMode bool
+	ObjectMode    ObjectMode
 }
 
 // parsePairStorageCreate will parse Pair slice into *pairStorageCreate
@@ -104,29 +115,42 @@ func (s *Storage) parsePairStorageCreate(opts []Pair) (pairStorageCreate, error)
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
-		// Generated pairs
-		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Create {
-				return pairStorageCreate{}, services.PairUnsupportedError{Pair: v}
+		case "object_mode":
+			if result.HasObjectMode {
+				continue
 			}
-
+			result.HasObjectMode = true
+			result.ObjectMode = v.Value.(ObjectMode)
+			continue
+		default:
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationCreate {
+			continue
+		}
+		return pairStorageCreate{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // pairStorageDelete is the parsed struct
 type pairStorageDelete struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
-	// Generated pairs
+	pairs         []Pair
+	HasObjectMode bool
+	ObjectMode    ObjectMode
 }
 
 // parsePairStorageDelete will parse Pair slice into *pairStorageDelete
@@ -136,31 +160,42 @@ func (s *Storage) parsePairStorageDelete(opts []Pair) (pairStorageDelete, error)
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
-		// Generated pairs
-		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Delete {
-				return pairStorageDelete{}, services.PairUnsupportedError{Pair: v}
+		case "object_mode":
+			if result.HasObjectMode {
+				continue
 			}
-
+			result.HasObjectMode = true
+			result.ObjectMode = v.Value.(ObjectMode)
+			continue
+		default:
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationDelete {
+			continue
+		}
+		return pairStorageDelete{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // pairStorageList is the parsed struct
 type pairStorageList struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
+	pairs       []Pair
 	HasListMode bool
 	ListMode    ListMode
-	// Generated pairs
 }
 
 // parsePairStorageList will parse Pair slice into *pairStorageList
@@ -170,21 +205,33 @@ func (s *Storage) parsePairStorageList(opts []Pair) (pairStorageList, error) {
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
 		case "list_mode":
+			if result.HasListMode {
+				continue
+			}
 			result.HasListMode = true
 			result.ListMode = v.Value.(ListMode)
-		// Generated pairs
+			continue
 		default:
-
-			if s.pairPolicy.All || s.pairPolicy.List {
-				return pairStorageList{}, services.PairUnsupportedError{Pair: v}
-			}
-
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationList {
+			continue
+		}
+		return pairStorageList{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
@@ -192,10 +239,6 @@ func (s *Storage) parsePairStorageList(opts []Pair) (pairStorageList, error) {
 // pairStorageMetadata is the parsed struct
 type pairStorageMetadata struct {
 	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
-	// Generated pairs
 }
 
 // parsePairStorageMetadata will parse Pair slice into *pairStorageMetadata
@@ -205,35 +248,39 @@ func (s *Storage) parsePairStorageMetadata(opts []Pair) (pairStorageMetadata, er
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
-		// Generated pairs
 		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Metadata {
-				return pairStorageMetadata{}, services.PairUnsupportedError{Pair: v}
-			}
-
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationMetadata {
+			continue
+		}
+		return pairStorageMetadata{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // pairStorageRead is the parsed struct
 type pairStorageRead struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
+	pairs         []Pair
 	HasIoCallback bool
 	IoCallback    func([]byte)
 	HasOffset     bool
 	Offset        int64
 	HasSize       bool
 	Size          int64
-	// Generated pairs
 }
 
 // parsePairStorageRead will parse Pair slice into *pairStorageRead
@@ -243,38 +290,56 @@ func (s *Storage) parsePairStorageRead(opts []Pair) (pairStorageRead, error) {
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
 		case "io_callback":
+			if result.HasIoCallback {
+				continue
+			}
 			result.HasIoCallback = true
 			result.IoCallback = v.Value.(func([]byte))
+			continue
 		case "offset":
+			if result.HasOffset {
+				continue
+			}
 			result.HasOffset = true
 			result.Offset = v.Value.(int64)
+			continue
 		case "size":
+			if result.HasSize {
+				continue
+			}
 			result.HasSize = true
 			result.Size = v.Value.(int64)
-		// Generated pairs
+			continue
 		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Read {
-				return pairStorageRead{}, services.PairUnsupportedError{Pair: v}
-			}
-
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationRead {
+			continue
+		}
+		return pairStorageRead{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // pairStorageStat is the parsed struct
 type pairStorageStat struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
-	// Generated pairs
+	pairs         []Pair
+	HasObjectMode bool
+	ObjectMode    ObjectMode
 }
 
 // parsePairStorageStat will parse Pair slice into *pairStorageStat
@@ -284,35 +349,46 @@ func (s *Storage) parsePairStorageStat(opts []Pair) (pairStorageStat, error) {
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
-		// Generated pairs
-		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Stat {
-				return pairStorageStat{}, services.PairUnsupportedError{Pair: v}
+		case "object_mode":
+			if result.HasObjectMode {
+				continue
 			}
-
+			result.HasObjectMode = true
+			result.ObjectMode = v.Value.(ObjectMode)
+			continue
+		default:
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationStat {
+			continue
+		}
+		return pairStorageStat{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // pairStorageWrite is the parsed struct
 type pairStorageWrite struct {
-	pairs []Pair
-
-	// Required pairs
-	// Optional pairs
+	pairs          []Pair
 	HasContentMd5  bool
 	ContentMd5     string
 	HasContentType bool
 	ContentType    string
 	HasIoCallback  bool
 	IoCallback     func([]byte)
-	// Generated pairs
 }
 
 // parsePairStorageWrite will parse Pair slice into *pairStorageWrite
@@ -322,32 +398,57 @@ func (s *Storage) parsePairStorageWrite(opts []Pair) (pairStorageWrite, error) {
 	}
 
 	for _, v := range opts {
+		// isUnsupportedPair records whether current pair is unsupported.
+		isUnsupportedPair := false
+
 		switch v.Key {
-		// Required pairs
-		// Optional pairs
 		case "content_md5":
+			if result.HasContentMd5 {
+				continue
+			}
 			result.HasContentMd5 = true
 			result.ContentMd5 = v.Value.(string)
+			continue
 		case "content_type":
+			if result.HasContentType {
+				continue
+			}
 			result.HasContentType = true
 			result.ContentType = v.Value.(string)
+			continue
 		case "io_callback":
+			if result.HasIoCallback {
+				continue
+			}
 			result.HasIoCallback = true
 			result.IoCallback = v.Value.(func([]byte))
-		// Generated pairs
+			continue
 		default:
-
-			if s.pairPolicy.All || s.pairPolicy.Write {
-				return pairStorageWrite{}, services.PairUnsupportedError{Pair: v}
-			}
-
+			isUnsupportedPair = true
 		}
+
+		if !isUnsupportedPair {
+			continue
+		}
+
+		// If user enables the loose operation feature, we will ignore PairUnsupportedError.
+		if s.features.LooseOperationAll || s.features.LooseOperationWrite {
+			continue
+		}
+		return pairStorageWrite{}, services.PairUnsupportedError{Pair: v}
 	}
+
+	// Check required pairs.
 
 	return result, nil
 }
 
 // Create will create a new object without any api call.
+//
+// ## Behavior
+//
+// - Create SHOULD NOT send any API call.
+// - Create SHOULD accept ObjectMode pair as object mode.
 //
 // This function will create a context by default.
 func (s *Storage) Create(path string, pairs ...Pair) (o *Object) {
@@ -360,7 +461,17 @@ func (s *Storage) Create(path string, pairs ...Pair) (o *Object) {
 	return s.create(path, opt)
 }
 
-// Delete will delete an Object from service.
+// Delete will delete an object from service.
+//
+// ## Behavior
+//
+// - Delete only delete one and only one object.
+//   - Service DON'T NEED to support remove all.
+//   - User NEED to implement remove_all by themself.
+// - Delete is idempotent.
+//   - Successful delete always return nil error.
+//   - Delete SHOULD never return `ObjectNotExist`
+//   - Delete DON'T NEED to check the object exist or not.
 //
 // This function will create a context by default.
 func (s *Storage) Delete(path string, pairs ...Pair) (err error) {
@@ -368,7 +479,17 @@ func (s *Storage) Delete(path string, pairs ...Pair) (err error) {
 	return s.DeleteWithContext(ctx, path, pairs...)
 }
 
-// DeleteWithContext will delete an Object from service.
+// DeleteWithContext will delete an object from service.
+//
+// ## Behavior
+//
+// - Delete only delete one and only one object.
+//   - Service DON'T NEED to support remove all.
+//   - User NEED to implement remove_all by themself.
+// - Delete is idempotent.
+//   - Successful delete always return nil error.
+//   - Delete SHOULD never return `ObjectNotExist`
+//   - Delete DON'T NEED to check the object exist or not.
 func (s *Storage) DeleteWithContext(ctx context.Context, path string, pairs ...Pair) (err error) {
 	defer func() {
 		err = s.formatError("delete", err, path)
@@ -450,6 +571,12 @@ func (s *Storage) ReadWithContext(ctx context.Context, path string, w io.Writer,
 
 // Stat will stat a path to get info of an object.
 //
+// ## Behavior
+//
+// - Stat SHOULD accept ObjectMode pair as hints.
+//   - Service COULD have different implementations for different object mode.
+//   - Service SHOULD check if returning ObjectMode is match
+//
 // This function will create a context by default.
 func (s *Storage) Stat(path string, pairs ...Pair) (o *Object, err error) {
 	ctx := context.Background()
@@ -457,6 +584,12 @@ func (s *Storage) Stat(path string, pairs ...Pair) (o *Object, err error) {
 }
 
 // StatWithContext will stat a path to get info of an object.
+//
+// ## Behavior
+//
+// - Stat SHOULD accept ObjectMode pair as hints.
+//   - Service COULD have different implementations for different object mode.
+//   - Service SHOULD check if returning ObjectMode is match
 func (s *Storage) StatWithContext(ctx context.Context, path string, pairs ...Pair) (o *Object, err error) {
 	defer func() {
 		err = s.formatError("stat", err, path)
